@@ -106,7 +106,3 @@ commands = ["journalctl -f"]
 
 The application will create a default keybinds.toml file in your config directory on first run.
 You can edit this file to customize the key bindings.
-
-## License
-
-[Your License Here]
