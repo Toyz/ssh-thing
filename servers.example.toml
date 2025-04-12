@@ -1,0 +1,37 @@
+[[servers]]
+name = "Example Server"
+host = "example.com"
+user = "username"
+private_key_path = "~/.ssh/id_rsa"
+commands = ["tail -f /var/log/syslog"]
+# Port will default to 22 if not specified
+
+[[servers]]
+name = "Docker Log Monitor"
+host = "192.168.1.100"
+user = "admin"
+private_key_path = "~/.ssh/id_ed25519"
+commands = ["docker logs -f --tail 10 container_name"]
+# Port will default to 22 if not specified
+
+[[servers]]
+name = "Custom Port Server"
+host = "example.org"
+user = "admin"
+port = 2222                            # Custom SSH port
+private_key_path = "~/.ssh/custom_key"
+commands = ["journalctl -f"]
+
+# Multiple commands example
+[[servers]]
+name = "Multiple Commands"
+host = "192.168.1.200"
+user = "devops"
+private_key_path = "~/.ssh/devops_key"
+commands = [
+  "echo 'System information:'",
+  "uptime",
+  "free -m",
+  "df -h",
+  "tail -f /var/log/application.log",
+]

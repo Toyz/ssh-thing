@@ -1,0 +1,4 @@
+*.toml
+!servers.example.toml
+*.exe
+bin
