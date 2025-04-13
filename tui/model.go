@@ -25,6 +25,7 @@ type Model struct {
 	verticalTabs bool
 	keys         KeyMap
 	help         help.Model
+	config       *config.Config
 }
 
 func NewModel(cfg *config.Config, keybindsPath string) (Model, error) {
@@ -35,15 +36,7 @@ func NewModel(cfg *config.Config, keybindsPath string) (Model, error) {
 		tabs = append(tabs, server.Name)
 
 		tab := components.NewTabContent(server.Name)
-
-		client, err := ssh.NewClient(&server)
-		if err != nil {
-			tab.HandleError(err)
-			tabContents = append(tabContents, tab)
-			continue
-		}
-
-		tab.SetClient(client)
+		tab.ScrollView.Append("Connecting...")
 		tabContents = append(tabContents, tab)
 	}
 
@@ -64,11 +57,34 @@ func NewModel(cfg *config.Config, keybindsPath string) (Model, error) {
 		verticalTabs: true,
 		keys:         LoadKeyMap(keybindsPath),
 		help:         helpModel,
+		config:       cfg,
 	}, nil
 }
 
 type updateContentMsg struct {
 	index int
+}
+
+type sshConnectionMsg struct {
+	index  int
+	client *ssh.Client
+	err    error
+}
+
+type connectSSHCmd struct {
+	index  int
+	server *config.SSHServer
+}
+
+func connectSSHClient(index int, server *config.SSHServer) tea.Cmd {
+	return func() tea.Msg {
+		client, err := ssh.NewClient(server)
+		return sshConnectionMsg{
+			index:  index,
+			client: client,
+			err:    err,
+		}
+	}
 }
 
 var (
@@ -98,7 +114,13 @@ func (m Model) colorizeOutput(content string) string {
 }
 
 func (m Model) Init() tea.Cmd {
-	return nil
+	var cmds []tea.Cmd
+
+	for i, server := range m.config.Servers {
+		cmds = append(cmds, connectSSHClient(i, &server))
+	}
+
+	return tea.Batch(cmds...)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -321,6 +343,47 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if !m.tabContents[msg.index].ScrollView.UserScrolled() {
 				m.tabContents[msg.index].ScrollView.GotoBottom()
+			}
+		}
+		return m, nil
+
+	case sshConnectionMsg:
+		if msg.index < len(m.tabContents) {
+			if msg.err != nil {
+				m.tabContents[msg.index].HandleError(msg.err)
+				m.tabContents[msg.index].ScrollView.Clear()
+				m.tabContents[msg.index].ScrollView.Append("Connection failed: " + msg.err.Error())
+			} else {
+				m.tabContents[msg.index].SetClient(msg.client)
+				m.tabContents[msg.index].ScrollView.Clear()
+				m.tabContents[msg.index].ScrollView.Append("Connected to " + m.config.Servers[msg.index].Host)
+
+				if len(m.config.Servers[msg.index].Commands) > 0 {
+					m.tabContents[msg.index].Client.RunCommands(m.config.Servers[msg.index].Commands)
+				}
+
+				index := msg.index
+				go func() {
+					for {
+						select {
+						case output := <-msg.client.OutputChan:
+							m.tabContents[index].ScrollView.Append(output)
+
+							if program != nil {
+								program.Send(updateContentMsg{index: index})
+							}
+
+						case err := <-msg.client.ErrChan:
+							if err != nil {
+								m.tabContents[index].ScrollView.Append("Error: " + err.Error())
+
+								if program != nil {
+									program.Send(updateContentMsg{index: index})
+								}
+							}
+						}
+					}
+				}()
 			}
 		}
 		return m, nil

@@ -13,6 +13,9 @@ func startClientCommands(model *Model) {
 			continue
 		}
 
+		// Clear the loading message before starting to stream output
+		tab.ScrollView.Clear()
+
 		if len(tab.Client.Config.Commands) > 0 {
 			tab.Client.RunCommands(tab.Client.Config.Commands)
 		}
