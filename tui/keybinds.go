@@ -10,21 +10,22 @@ import (
 )
 
 type KeyBindingsMap struct {
-	Up             []string `toml:"up"`
-	Down           []string `toml:"down"`
-	Left           []string `toml:"left"`
-	Right          []string `toml:"right"`
-	PageUp         []string `toml:"pageUp"`
-	PageDown       []string `toml:"pageDown"`
-	Home           []string `toml:"home"`
-	End            []string `toml:"end"`
-	Quit           []string `toml:"quit"`
-	ToggleColor    []string `toml:"toggleColor"`
-	ResetScroll    []string `toml:"resetScroll"`
-	TabNext        []string `toml:"tabNext"`
-	TabPrev        []string `toml:"tabPrev"`
-	ClearBuffer    []string `toml:"clearBuffer"`
-	ToggleWordWrap []string `toml:"toggleWordWrap"`
+	Up                []string `toml:"up"`
+	Down              []string `toml:"down"`
+	Left              []string `toml:"left"`
+	Right             []string `toml:"right"`
+	PageUp            []string `toml:"pageUp"`
+	PageDown          []string `toml:"pageDown"`
+	Home              []string `toml:"home"`
+	End               []string `toml:"end"`
+	Quit              []string `toml:"quit"`
+	ToggleColor       []string `toml:"toggleColor"`
+	ResetScroll       []string `toml:"resetScroll"`
+	TabNext           []string `toml:"tabNext"`
+	TabPrev           []string `toml:"tabPrev"`
+	ClearBuffer       []string `toml:"clearBuffer"`
+	ToggleWordWrap    []string `toml:"toggleWordWrap"`
+	ToggleTabPosition []string `toml:"toggleTabPosition"`
 }
 
 type KeyBindingsConfig struct {
@@ -32,21 +33,22 @@ type KeyBindingsConfig struct {
 }
 
 type KeyMap struct {
-	Up             key.Binding
-	Down           key.Binding
-	Left           key.Binding
-	Right          key.Binding
-	PageUp         key.Binding
-	PageDown       key.Binding
-	Home           key.Binding
-	End            key.Binding
-	Quit           key.Binding
-	ToggleColor    key.Binding
-	ResetScroll    key.Binding
-	TabNext        key.Binding
-	TabPrev        key.Binding
-	ClearBuffer    key.Binding
-	ToggleWordWrap key.Binding
+	Up                key.Binding
+	Down              key.Binding
+	Left              key.Binding
+	Right             key.Binding
+	PageUp            key.Binding
+	PageDown          key.Binding
+	Home              key.Binding
+	End               key.Binding
+	Quit              key.Binding
+	ToggleColor       key.Binding
+	ResetScroll       key.Binding
+	TabNext           key.Binding
+	TabPrev           key.Binding
+	ClearBuffer       key.Binding
+	ToggleWordWrap    key.Binding
+	ToggleTabPosition key.Binding
 }
 
 func (k KeyMap) ShortHelp() []key.Binding {
@@ -62,21 +64,22 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 }
 
 var bindingDescriptions = map[string]string{
-	"up":             "scroll up",
-	"down":           "scroll down",
-	"left":           "previous tab",
-	"right":          "next tab",
-	"pageUp":         "page up",
-	"pageDown":       "page down",
-	"home":           "scroll to top",
-	"end":            "scroll to bottom",
-	"quit":           "quit",
-	"toggleColor":    "toggle colors",
-	"resetScroll":    "reset scroll",
-	"tabNext":        "next tab",
-	"tabPrev":        "previous tab",
-	"clearBuffer":    "clear buffer",
-	"toggleWordWrap": "toggle word wrap",
+	"up":                "scroll up",
+	"down":              "scroll down",
+	"left":              "previous tab",
+	"right":             "next tab",
+	"pageUp":            "page up",
+	"pageDown":          "page down",
+	"home":              "scroll to top",
+	"end":               "scroll to bottom",
+	"quit":              "quit",
+	"toggleColor":       "toggle colors",
+	"resetScroll":       "reset scroll",
+	"tabNext":           "next tab",
+	"tabPrev":           "previous tab",
+	"clearBuffer":       "clear buffer",
+	"toggleWordWrap":    "toggle word wrap",
+	"toggleTabPosition": "toggle tab position",
 }
 
 func DefaultKeyMap() KeyMap {
@@ -141,26 +144,31 @@ func DefaultKeyMap() KeyMap {
 			key.WithKeys("w"),
 			key.WithHelp("w", "toggle word wrap"),
 		),
+		ToggleTabPosition: key.NewBinding(
+			key.WithKeys("p"),
+			key.WithHelp("p", "toggle tab position"),
+		),
 	}
 }
 
 func DefaultKeyBindingsMap() KeyBindingsMap {
 	return KeyBindingsMap{
-		Up:             []string{"up", "k"},
-		Down:           []string{"down", "j"},
-		Left:           []string{"left", "h"},
-		Right:          []string{"right", "l"},
-		PageUp:         []string{"pgup"},
-		PageDown:       []string{"pgdown"},
-		Home:           []string{"home"},
-		End:            []string{"end", "G"},
-		Quit:           []string{"q", "ctrl+c"},
-		ToggleColor:    []string{"c"},
-		ResetScroll:    []string{"r"},
-		TabNext:        []string{"tab"},
-		TabPrev:        []string{"shift+tab"},
-		ClearBuffer:    []string{"ctrl+l"},
-		ToggleWordWrap: []string{"w"},
+		Up:                []string{"up", "k"},
+		Down:              []string{"down", "j"},
+		Left:              []string{"left", "h"},
+		Right:             []string{"right", "l"},
+		PageUp:            []string{"pgup"},
+		PageDown:          []string{"pgdown"},
+		Home:              []string{"home"},
+		End:               []string{"end", "G"},
+		Quit:              []string{"q", "ctrl+c"},
+		ToggleColor:       []string{"c"},
+		ResetScroll:       []string{"r"},
+		TabNext:           []string{"tab"},
+		TabPrev:           []string{"shift+tab"},
+		ClearBuffer:       []string{"ctrl+l"},
+		ToggleWordWrap:    []string{"w"},
+		ToggleTabPosition: []string{"p"},
 	}
 }
 
@@ -225,6 +233,10 @@ func (m KeyBindingsMap) ToKeyMap() KeyMap {
 		ToggleWordWrap: key.NewBinding(
 			key.WithKeys(m.ToggleWordWrap...),
 			key.WithHelp(getHelpPrefix(m.ToggleWordWrap), bindingDescriptions["toggleWordWrap"]),
+		),
+		ToggleTabPosition: key.NewBinding(
+			key.WithKeys(m.ToggleTabPosition...),
+			key.WithHelp(getHelpPrefix(m.ToggleTabPosition), bindingDescriptions["toggleTabPosition"]),
 		),
 	}
 }
@@ -355,6 +367,9 @@ func LoadKeyBindings(filePath string) (KeyBindingsMap, error) {
 	}
 	if len(config.Keybinds.ToggleWordWrap) == 0 {
 		config.Keybinds.ToggleWordWrap = defaultBindings.ToggleWordWrap
+	}
+	if len(config.Keybinds.ToggleTabPosition) == 0 {
+		config.Keybinds.ToggleTabPosition = defaultBindings.ToggleTabPosition
 	}
 
 	return config.Keybinds, nil

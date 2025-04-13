@@ -14,6 +14,8 @@ type ScrollView struct {
 	wordWrap     bool
 	width        int
 	height       int
+	customBorder lipgloss.Border
+	hasBorder    bool
 }
 
 func NewScrollView() *ScrollView {
@@ -25,7 +27,39 @@ func NewScrollView() *ScrollView {
 		buffer:       NewScrollBuffer(DefaultMaxLines),
 		userScrolled: false,
 		wordWrap:     false,
+		hasBorder:    false,
 	}
+}
+
+func (s *ScrollView) SetBorder(border lipgloss.Border) {
+	s.customBorder = border
+	s.hasBorder = true
+	s.updateViewportStyle()
+}
+
+func (s *ScrollView) RemoveBorder() {
+	s.hasBorder = false
+	s.updateViewportStyle()
+}
+
+func (s *ScrollView) updateViewportStyle() {
+	var style lipgloss.Style
+
+	if s.IsScrollable() {
+		if s.userScrolled {
+			style = ScrolledUpStyle
+		} else {
+			style = ScrollableStyle
+		}
+	} else {
+		style = ViewportStyle
+	}
+
+	if s.hasBorder {
+		style = style.Border(s.customBorder)
+	}
+
+	s.viewport.Style = style
 }
 
 func (s *ScrollView) SetContent(content string) {
@@ -59,11 +93,13 @@ func (s *ScrollView) UserScrolled() bool {
 
 func (s *ScrollView) SetUserScrolled(scrolled bool) {
 	s.userScrolled = scrolled
+	s.updateViewportStyle()
 }
 
 func (s *ScrollView) ResetUserScrolledIfAtBottom() {
 	if s.viewport.AtBottom() {
 		s.userScrolled = false
+		s.updateViewportStyle()
 	}
 }
 
@@ -141,6 +177,7 @@ func (s *ScrollView) UpdateContent(colorizer func(string) string) {
 		content = s.wrapContent(content)
 	}
 	s.viewport.SetContent(content)
+	s.updateViewportStyle()
 }
 
 func (s *ScrollView) ViewportModel() *viewport.Model {
@@ -148,13 +185,9 @@ func (s *ScrollView) ViewportModel() *viewport.Model {
 }
 
 func (s *ScrollView) View() string {
-	if s.IsScrollable() {
-		if s.userScrolled {
-			s.viewport.Style = ScrolledUpStyle
-		} else {
-			s.viewport.Style = ScrollableStyle
-		}
+	s.updateViewportStyle()
 
+	if s.IsScrollable() {
 		hasMoreAbove := s.viewport.YOffset > 0
 		hasMoreBelow := !s.viewport.AtBottom()
 
@@ -194,8 +227,6 @@ func (s *ScrollView) View() string {
 
 			return content
 		}
-	} else {
-		s.viewport.Style = ViewportStyle
 	}
 
 	return s.viewport.View()

@@ -15,15 +15,16 @@ import (
 )
 
 type Model struct {
-	tabs        []string
-	tabContents []*components.TabContent
-	activeTab   int
-	quitting    bool
-	width       int
-	height      int
-	colorize    bool
-	keys        KeyMap
-	help        help.Model
+	tabs         []string
+	tabContents  []*components.TabContent
+	activeTab    int
+	quitting     bool
+	width        int
+	height       int
+	colorize     bool
+	verticalTabs bool
+	keys         KeyMap
+	help         help.Model
 }
 
 func NewModel(cfg *config.Config, keybindsPath string) (Model, error) {
@@ -55,13 +56,14 @@ func NewModel(cfg *config.Config, keybindsPath string) (Model, error) {
 	helpModel.Styles.FullSeparator = components.HelpFullSeparator
 
 	return Model{
-		tabs:        tabs,
-		tabContents: tabContents,
-		activeTab:   0,
-		quitting:    false,
-		colorize:    false,
-		keys:        LoadKeyMap(keybindsPath),
-		help:        helpModel,
+		tabs:         tabs,
+		tabContents:  tabContents,
+		activeTab:    0,
+		quitting:     false,
+		colorize:     false,
+		verticalTabs: true,
+		keys:         LoadKeyMap(keybindsPath),
+		help:         helpModel,
 	}, nil
 }
 
@@ -74,7 +76,7 @@ var (
 	errorPattern     = regexp.MustCompile(`(?i)(\[?ERROR\]?[:|\s]+)|(ERROR\s*-\s*)|(ERROR\s{2,})|\bERROR\b`)
 	warnPattern      = regexp.MustCompile(`(?i)(\[?WARN(ING)?\]?[:|\s]+)|(\[?WARNING\]?[:|\s]+)|(WARN(ING)?\s*-\s*)|(WARN(ING)?\s{2,})|\bWARN(ING)?\b`)
 	debugPattern     = regexp.MustCompile(`(?i)(\[?DEBUG\]?[:|\s]+)|(DEBUG\s*-\s*)|(DEBUG\s{2,})|\bDEBUG\b`)
-	tracePattern     = regexp.MustCompile(`(?i)(\[?TRACE\]?[:|\s]+)|(TRACE\s*-\\s*)|(TRACE\s{2,})|\bTRACE\b`)
+	tracePattern     = regexp.MustCompile(`(?i)(\[?TRACE\]?[:|\s]+)|(TRACE\s*-\s*)|(TRACE\s{2,})|\bTRACE\b`)
 	fatalPattern     = regexp.MustCompile(`(?i)(\[?FATAL\]?[:|\s]+)|(FATAL\s*-\s*)|\bFATAL\b`)
 	timestampPattern = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}([.,]\d+)?(Z|[+-]\d{2}:\d{2})`)
 )
@@ -205,10 +207,56 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.tabContents[m.activeTab].ScrollView.ToggleWordWrap()
 			}
 			return m, nil
+
+		case key.Matches(msg, m.keys.ToggleTabPosition):
+			m.verticalTabs = !m.verticalTabs
+			if m.activeTab < len(m.tabContents) && !m.tabContents[m.activeTab].HasError {
+				helpHeight := 2
+				if m.help.ShowAll {
+					helpHeight = len(m.keys.FullHelp())*2 + 4
+				}
+
+				tabWidth := 0
+				if m.verticalTabs {
+					for _, tab := range m.tabs {
+						w := lipgloss.Width(tab) + 4
+						if w > tabWidth {
+							tabWidth = w
+						}
+					}
+					m.tabContents[m.activeTab].ScrollView.SetSize(m.width-tabWidth, m.height-1-helpHeight)
+				} else {
+					m.tabContents[m.activeTab].ScrollView.SetSize(m.width, m.height-1-helpHeight)
+				}
+
+				if !m.tabContents[m.activeTab].ScrollView.UserScrolled() {
+					m.tabContents[m.activeTab].ScrollView.GotoBottom()
+				}
+			}
+			return m, nil
 		}
 
 	case tea.MouseMsg:
-		if msg.Type == tea.MouseLeft && msg.Y == 0 {
+		if m.verticalTabs {
+			if msg.Type == tea.MouseLeft {
+				tabWidth := 0
+				for _, tab := range m.tabs {
+					w := lipgloss.Width(tab) + 4
+					if w > tabWidth {
+						tabWidth = w
+					}
+				}
+
+				if msg.X < tabWidth {
+					for i := range m.tabs {
+						if msg.Y == i {
+							m.activeTab = i
+							return m, nil
+						}
+					}
+				}
+			}
+		} else if msg.Type == tea.MouseLeft && msg.Y == 0 {
 			xPos := 0
 			for i, tab := range m.tabs {
 				tabWidth := lipgloss.Width(tab) + 4
@@ -220,7 +268,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				xPos += tabWidth
 			}
-		} else if msg.Type == tea.MouseMotion && msg.Y != 0 {
+		}
+
+		if msg.Type == tea.MouseMotion && msg.Y != 0 {
 			if m.activeTab < len(m.tabContents) && !m.tabContents[m.activeTab].HasError {
 				vpModel := m.tabContents[m.activeTab].ScrollView.ViewportModel()
 				if !vpModel.AtBottom() {
@@ -283,34 +333,40 @@ func (m Model) View() string {
 		helpHeight = len(m.keys.FullHelp())*2 + 2
 	}
 
-	var tabBar strings.Builder
-	for i, tab := range m.tabs {
-		if i == m.activeTab {
-			tabBar.WriteString(components.ActiveTabStyle.Render(tab))
-		} else {
-			tabBar.WriteString(components.TabStyle.Render(tab))
-		}
-	}
-
-	gapWidth := m.width - lipgloss.Width(tabBar.String())
-	if gapWidth > 0 {
-		tabBar.WriteString(components.TabGap.Width(gapWidth).Render(""))
-	}
-
 	var content string
 	if m.activeTab < len(m.tabContents) {
 		if m.tabContents[m.activeTab].HasError {
 			content = components.ErrorStyle.Render(m.tabContents[m.activeTab].ErrorMsg)
 		} else {
-			if m.tabContents[m.activeTab].ScrollView.ViewportModel().Height != m.height-1-helpHeight {
-				m.tabContents[m.activeTab].ScrollView.SetSize(m.width, m.height-1-helpHeight)
+			if m.verticalTabs {
+				tabWidth := 0
+				for _, tab := range m.tabs {
+					w := lipgloss.Width(tab) + 4
+					if w > tabWidth {
+						tabWidth = w
+					}
+				}
+
+				if m.tabContents[m.activeTab].ScrollView.ViewportModel().Width != m.width-tabWidth ||
+					m.tabContents[m.activeTab].ScrollView.ViewportModel().Height != m.height-1-helpHeight {
+					m.tabContents[m.activeTab].ScrollView.SetSize(m.width-tabWidth, m.height-1-helpHeight)
+				}
+
+				m.tabContents[m.activeTab].ScrollView.SetBorder(lipgloss.RoundedBorder())
+			} else {
+				if m.tabContents[m.activeTab].ScrollView.ViewportModel().Width != m.width ||
+					m.tabContents[m.activeTab].ScrollView.ViewportModel().Height != m.height-1-helpHeight {
+					m.tabContents[m.activeTab].ScrollView.SetSize(m.width, m.height-1-helpHeight)
+				}
+
+				m.tabContents[m.activeTab].ScrollView.SetBorder(lipgloss.RoundedBorder())
 			}
 			content = m.tabContents[m.activeTab].ScrollView.View()
 		}
 	}
 
 	m.help.Width = m.width
-	helpView := m.help.View(m.keys)
+	helpView := components.HelpStyleWithBorder.Render(m.help.View(m.keys))
 
 	bufferInfo := ""
 	if m.activeTab < len(m.tabContents) && !m.tabContents[m.activeTab].HasError {
@@ -324,9 +380,58 @@ func (m Model) View() string {
 		helpView += bufferInfo
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Top,
-		tabBar.String(),
-		content,
-		helpView,
-	)
+	if m.verticalTabs {
+		var verticalTabBar strings.Builder
+		for i, tab := range m.tabs {
+			if i == m.activeTab {
+				verticalTabBar.WriteString(components.ActiveTabStyle.Render(tab))
+			} else {
+				verticalTabBar.WriteString(components.TabStyle.Render(tab))
+			}
+			verticalTabBar.WriteString("\n")
+		}
+
+		tabWidth := 0
+		for _, tab := range m.tabs {
+			w := lipgloss.Width(tab) + 4
+			if w > tabWidth {
+				tabWidth = w
+			}
+		}
+
+		tabsView := lipgloss.NewStyle().
+			Width(tabWidth).
+			Height(m.height - helpHeight - 1).
+			Render(verticalTabBar.String())
+
+		return lipgloss.JoinHorizontal(lipgloss.Left, tabsView, lipgloss.JoinVertical(lipgloss.Top, content, helpView))
+	} else {
+		var tabBar strings.Builder
+		xPos := 0
+		for i, tab := range m.tabs {
+			renderedTab := ""
+			if i == m.activeTab {
+				renderedTab = components.ActiveTabStyle.Render(tab)
+			} else {
+				renderedTab = components.TabStyle.Render(tab)
+			}
+
+			tabWidth := lipgloss.Width(tab) + 4
+			paddedTab := renderedTab
+
+			tabBar.WriteString(paddedTab)
+			xPos += tabWidth
+		}
+
+		gapWidth := m.width - xPos
+		if gapWidth > 0 {
+			tabBar.WriteString(components.TabGap.Width(gapWidth).Render(""))
+		}
+
+		return lipgloss.JoinVertical(lipgloss.Top,
+			tabBar.String(),
+			content,
+			helpView,
+		)
+	}
 }

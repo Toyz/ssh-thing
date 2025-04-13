@@ -19,23 +19,20 @@ var (
 	TabGap = lipgloss.NewStyle().Background(lipgloss.Color("#333333"))
 
 	ViewportStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderLeft(false).
-			BorderRight(false).
+			BorderTop(true).
+			BorderBottom(true).
 			BorderForeground(lipgloss.Color("#0a7bca"))
 
 	ScrollableStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderLeft(false).
-			BorderRight(false).
+			BorderTop(true).
+			BorderBottom(true).
 			BorderForeground(lipgloss.Color("#FFB000"))
 
 	ScrolledUpStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
+			BorderTop(true).
+			BorderBottom(true).
 			BorderForeground(lipgloss.Color("#FF8800")).
 			BorderBottom(true).
-			BorderLeft(false).
-			BorderRight(false).
 			BorderBottomForeground(lipgloss.Color("#FF5500"))
 
 	ErrorStyle = lipgloss.NewStyle().
@@ -43,6 +40,9 @@ var (
 
 	HelpStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#888888"))
+
+	HelpStyleWithBorder = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#888888"))
 
 	HelpShortKey = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#87D7FF"))
