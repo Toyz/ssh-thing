@@ -171,10 +171,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, m.keys.Right), key.Matches(msg, m.keys.TabNext):
 			m.activeTab = (m.activeTab + 1) % len(m.tabs)
+			if m.activeTab < len(m.tabContents) && !m.tabContents[m.activeTab].HasError {
+				m.tabContents[m.activeTab].ScrollView.SetUserScrolled(false)
+				m.tabContents[m.activeTab].ScrollView.GotoBottom()
+			}
 			return m, nil
 
 		case key.Matches(msg, m.keys.Left), key.Matches(msg, m.keys.TabPrev):
 			m.activeTab = (m.activeTab - 1 + len(m.tabs)) % len(m.tabs)
+			if m.activeTab < len(m.tabContents) && !m.tabContents[m.activeTab].HasError {
+				m.tabContents[m.activeTab].ScrollView.SetUserScrolled(false)
+				m.tabContents[m.activeTab].ScrollView.GotoBottom()
+			}
 			return m, nil
 
 		case key.Matches(msg, m.keys.ToggleColor):
@@ -251,6 +259,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					for i := range m.tabs {
 						if msg.Y == i {
 							m.activeTab = i
+							if m.activeTab < len(m.tabContents) && !m.tabContents[m.activeTab].HasError {
+								m.tabContents[m.activeTab].ScrollView.SetUserScrolled(false)
+								m.tabContents[m.activeTab].ScrollView.GotoBottom()
+							}
 							return m, nil
 						}
 					}
@@ -263,6 +275,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				if msg.X >= xPos && msg.X < xPos+tabWidth {
 					m.activeTab = i
+					if m.activeTab < len(m.tabContents) && !m.tabContents[m.activeTab].HasError {
+						m.tabContents[m.activeTab].ScrollView.SetUserScrolled(false)
+						m.tabContents[m.activeTab].ScrollView.GotoBottom()
+					}
 					return m, nil
 				}
 
