@@ -168,10 +168,7 @@ func (s *ScrollView) View() string {
 				indicator = " " + ScrollDownIndicator + " "
 			}
 
-			styledIndicator := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#FFB000")).
-				Bold(true).
-				Render(indicator)
+			styledIndicator := ScrollIndicatorStyle.Render(indicator)
 
 			content := s.viewport.View()
 			lines := strings.Split(content, "\n")

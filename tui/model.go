@@ -111,7 +111,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					helpHeight = len(m.keys.FullHelp())*2 + 4
 				}
 
-				m.tabContents[m.activeTab].ScrollView.SetSize(m.width-4, m.height-6-helpHeight)
+				m.tabContents[m.activeTab].ScrollView.SetSize(m.width, m.height-1-helpHeight)
 
 				if !m.tabContents[m.activeTab].ScrollView.UserScrolled() {
 					m.tabContents[m.activeTab].ScrollView.GotoBottom()
@@ -237,7 +237,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		for _, tab := range m.tabContents {
 			if !tab.HasError {
-				tab.ScrollView.SetSize(msg.Width-4, msg.Height-6)
+				tab.ScrollView.SetSize(msg.Width, msg.Height-1)
 				tab.ScrollView.UpdateContent(nil)
 				if m.colorize {
 					tab.ScrollView.UpdateContent(m.colorizeOutput)
@@ -302,8 +302,8 @@ func (m Model) View() string {
 		if m.tabContents[m.activeTab].HasError {
 			content = components.ErrorStyle.Render(m.tabContents[m.activeTab].ErrorMsg)
 		} else {
-			if m.tabContents[m.activeTab].ScrollView.ViewportModel().Height != m.height-6-helpHeight {
-				m.tabContents[m.activeTab].ScrollView.SetSize(m.width-4, m.height-6-helpHeight)
+			if m.tabContents[m.activeTab].ScrollView.ViewportModel().Height != m.height-1-helpHeight {
+				m.tabContents[m.activeTab].ScrollView.SetSize(m.width, m.height-1-helpHeight)
 			}
 			content = m.tabContents[m.activeTab].ScrollView.View()
 		}
