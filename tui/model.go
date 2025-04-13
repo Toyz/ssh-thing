@@ -356,7 +356,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.tabContents[msg.index].SetClient(msg.client)
 				m.tabContents[msg.index].ScrollView.Clear()
-				m.tabContents[msg.index].ScrollView.Append("Connected to " + m.config.Servers[msg.index].Host)
+				m.tabContents[msg.index].ScrollView.Append("Connected to " + m.config.Servers[msg.index].Host + "\n")
 
 				if len(m.config.Servers[msg.index].Commands) > 0 {
 					m.tabContents[msg.index].Client.RunCommands(m.config.Servers[msg.index].Commands)
