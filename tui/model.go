@@ -47,12 +47,12 @@ func NewModel(cfg *config.Config, keybindsPath string) (Model, error) {
 	}
 
 	helpModel := help.New()
-	helpModel.Styles.ShortKey = lipgloss.NewStyle().Foreground(lipgloss.Color("#87D7FF"))
-	helpModel.Styles.ShortDesc = lipgloss.NewStyle().Foreground(lipgloss.Color("#A7B9C9"))
-	helpModel.Styles.ShortSeparator = lipgloss.NewStyle().Foreground(lipgloss.Color("#5F5F5F"))
-	helpModel.Styles.FullKey = lipgloss.NewStyle().Foreground(lipgloss.Color("#87D7FF"))
-	helpModel.Styles.FullDesc = lipgloss.NewStyle().Foreground(lipgloss.Color("#A7B9C9"))
-	helpModel.Styles.FullSeparator = lipgloss.NewStyle().Foreground(lipgloss.Color("#5F5F5F"))
+	helpModel.Styles.ShortKey = components.HelpShortKey
+	helpModel.Styles.ShortDesc = components.HelpShortDesc
+	helpModel.Styles.ShortSeparator = components.HelpShortSeparator
+	helpModel.Styles.FullKey = components.HelpFullKey
+	helpModel.Styles.FullDesc = components.HelpFullDesc
+	helpModel.Styles.FullSeparator = components.HelpFullSeparator
 
 	return Model{
 		tabs:        tabs,

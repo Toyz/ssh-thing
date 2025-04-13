@@ -42,6 +42,24 @@ var (
 	HelpStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#888888"))
 
+	HelpShortKey = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#87D7FF"))
+
+	HelpShortDesc = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#A7B9C9"))
+
+	HelpShortSeparator = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#5F5F5F"))
+
+	HelpFullKey = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#87D7FF"))
+
+	HelpFullDesc = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#A7B9C9"))
+
+	HelpFullSeparator = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#5F5F5F"))
+
 	ScrollUpIndicator   = "↑"
 	ScrollDownIndicator = "↓"
 )

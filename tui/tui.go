@@ -13,8 +13,8 @@ func startClientCommands(model *Model) {
 			continue
 		}
 
-		for _, cmd := range tab.Client.Config.Commands {
-			tab.Client.RunCommand(cmd)
+		if len(tab.Client.Config.Commands) > 0 {
+			tab.Client.RunCommands(tab.Client.Config.Commands)
 		}
 
 		index := i
