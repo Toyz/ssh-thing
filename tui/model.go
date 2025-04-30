@@ -356,7 +356,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.tabContents[msg.index].SetClient(msg.client)
 				m.tabContents[msg.index].ScrollView.Clear()
-				m.tabContents[msg.index].ScrollView.Append("Connected to " + m.config.Servers[msg.index].Host + "\n")
+				m.tabContents[msg.index].ScrollView.Append("Connected to " + lipgloss.NewStyle().Bold(true).Render(m.config.Servers[msg.index].Name) + "\n")
+				m.tabContents[msg.index].ScrollView.Append("SSH Version: " + lipgloss.NewStyle().Bold(true).Render(string(msg.client.SSHClient.ServerVersion())) + "\n")
 
 				if len(m.config.Servers[msg.index].Commands) > 0 {
 					m.tabContents[msg.index].Client.RunCommands(m.config.Servers[msg.index].Commands)
