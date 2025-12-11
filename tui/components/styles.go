@@ -7,63 +7,77 @@ import (
 var (
 	ActiveTabStyle = lipgloss.NewStyle().
 			Bold(true).
-			Background(lipgloss.Color("#0a7bca")).
-			Foreground(lipgloss.Color("#ffffff")).
-			Padding(0, 2)
+			Background(lipgloss.Color("#bd93f9")). // Dracula Purple
+			Foreground(lipgloss.Color("#282a36")). // Dracula Background
+			Padding(0, 1)
 
 	TabStyle = lipgloss.NewStyle().
-			Padding(0, 2).
-			Foreground(lipgloss.Color("#ffffff")).
-			Background(lipgloss.Color("#444444"))
+			Padding(0, 1).
+			Foreground(lipgloss.Color("#f8f8f2")). // Dracula Foreground
+			Background(lipgloss.Color("#44475a"))  // Dracula Current Line
 
-	TabGap = lipgloss.NewStyle().Background(lipgloss.Color("#333333"))
+	TabGap = lipgloss.NewStyle().Background(lipgloss.Color("#282a36"))
 
 	ViewportStyle = lipgloss.NewStyle().
-			BorderTop(true).
-			BorderBottom(true).
-			BorderForeground(lipgloss.Color("#0a7bca"))
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#bd93f9")) // Dracula Purple
 
 	ScrollableStyle = lipgloss.NewStyle().
-			BorderTop(true).
-			BorderBottom(true).
-			BorderForeground(lipgloss.Color("#FFB000"))
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#ffb86c")) // Dracula Orange
 
 	ScrolledUpStyle = lipgloss.NewStyle().
-			BorderTop(true).
-			BorderBottom(true).
-			BorderForeground(lipgloss.Color("#FF8800")).
-			BorderBottom(true).
-			BorderBottomForeground(lipgloss.Color("#FF5500"))
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#ff5555")) // Dracula Red
+
+	StatusBarStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#282a36")). // Dark FG
+			Background(lipgloss.Color("#bd93f9")). // Purple BG
+			Padding(0, 1).
+			Bold(true)
+
+	StatusText = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#f8f8f2")).
+			Background(lipgloss.Color("#44475a")).
+			Padding(0, 1)
 
 	ErrorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#ff0000"))
+			Foreground(lipgloss.Color("#ff5555"))
 
 	HelpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#888888"))
+			Foreground(lipgloss.Color("#6272a4")). // Dracula Comment
+			Background(lipgloss.Color("#44475a"))
 
 	HelpStyleWithBorder = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#888888"))
+				Foreground(lipgloss.Color("#6272a4")).
+				Background(lipgloss.Color("#44475a"))
 
 	HelpShortKey = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#87D7FF"))
+			Foreground(lipgloss.Color("#8be9fd")). // Dracula Cyan
+			Background(lipgloss.Color("#44475a"))
 
 	HelpShortDesc = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#A7B9C9"))
+			Foreground(lipgloss.Color("#6272a4")).
+			Background(lipgloss.Color("#44475a"))
 
 	HelpShortSeparator = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#5F5F5F"))
+				Foreground(lipgloss.Color("#44475a")).
+				Background(lipgloss.Color("#44475a"))
 
 	HelpFullKey = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#87D7FF"))
+			Foreground(lipgloss.Color("#8be9fd")).
+			Background(lipgloss.Color("#44475a"))
 
 	HelpFullDesc = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#A7B9C9"))
+			Foreground(lipgloss.Color("#6272a4")).
+			Background(lipgloss.Color("#44475a"))
 
 	HelpFullSeparator = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#5F5F5F"))
+				Foreground(lipgloss.Color("#44475a")).
+				Background(lipgloss.Color("#44475a"))
 
 	ScrollIndicatorStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#FFB000")).
+				Foreground(lipgloss.Color("#ffb86c")).
 				Bold(true)
 
 	ScrollUpIndicator   = "↑"

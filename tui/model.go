@@ -18,6 +18,7 @@ type Model struct {
 	tabs         []string
 	tabContents  []*components.TabContent
 	activeTab    int
+	tabOffset    int
 	quitting     bool
 	width        int
 	height       int
@@ -25,6 +26,7 @@ type Model struct {
 	verticalTabs bool
 	keys         KeyMap
 	help         help.Model
+	statusBar    *components.StatusBar
 	config       *config.Config
 }
 
@@ -57,6 +59,7 @@ func NewModel(cfg *config.Config, keybindsPath string) (Model, error) {
 		verticalTabs: true,
 		keys:         LoadKeyMap(keybindsPath),
 		help:         helpModel,
+		statusBar:    components.NewStatusBar(),
 		config:       cfg,
 	}, nil
 }
@@ -197,6 +200,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.tabContents[m.activeTab].ScrollView.SetUserScrolled(false)
 				m.tabContents[m.activeTab].ScrollView.GotoBottom()
 			}
+			// Adjust tab offset if needed
+			// This logic is simple: if activeTab is outside the current view, we might need to scroll.
+			// But we don't know the view height here easily without recalculating.
+			// We'll handle the offset calculation in View() or a helper, but ideally Update() should handle state.
+			// For now, let's just ensure we don't crash. The View() will handle the rendering window.
 			return m, nil
 
 		case key.Matches(msg, m.keys.Left), key.Matches(msg, m.keys.TabPrev):
@@ -271,22 +279,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.Type == tea.MouseLeft {
 				tabWidth := 0
 				for _, tab := range m.tabs {
-					w := lipgloss.Width(tab) + 4
+					w := lipgloss.Width(tab) + 6
 					if w > tabWidth {
 						tabWidth = w
 					}
 				}
 
 				if msg.X < tabWidth {
-					for i := range m.tabs {
-						if msg.Y == i {
-							m.activeTab = i
-							if m.activeTab < len(m.tabContents) && !m.tabContents[m.activeTab].HasError {
-								m.tabContents[m.activeTab].ScrollView.SetUserScrolled(false)
-								m.tabContents[m.activeTab].ScrollView.GotoBottom()
-							}
-							return m, nil
+					// Calculate the clicked index based on scroll offset
+					clickedIndex := m.tabOffset + msg.Y
+					if clickedIndex >= 0 && clickedIndex < len(m.tabs) {
+						m.activeTab = clickedIndex
+						if m.activeTab < len(m.tabContents) && !m.tabContents[m.activeTab].HasError {
+							m.tabContents[m.activeTab].ScrollView.SetUserScrolled(false)
+							m.tabContents[m.activeTab].ScrollView.GotoBottom()
 						}
+						return m, nil
 					}
 				}
 			}
@@ -408,72 +416,101 @@ func (m Model) View() string {
 		return "Goodbye!\n"
 	}
 
-	helpHeight := 2
-	if m.help.ShowAll {
-		helpHeight = len(m.keys.FullHelp())*2 + 2
+	m.help.Width = m.width
+	helpView := m.help.View(m.keys)
+
+	// Prepare status bar data
+	var currentTab *components.TabContent
+	var serverName, status, scrollPos string
+
+	if m.activeTab < len(m.tabContents) {
+		currentTab = m.tabContents[m.activeTab]
+		serverName = currentTab.Name
+		if currentTab.HasError {
+			status = "Error"
+		} else if currentTab.Client == nil {
+			status = "Connecting"
+		} else {
+			status = "Connected"
+		}
+		scrollPos = fmt.Sprintf("%d/%d", currentTab.ScrollView.LineCount(), components.DefaultMaxLines)
 	}
 
+	m.statusBar.Width = m.width
+	bar := m.statusBar.View(serverName, status, scrollPos, helpView)
+	barHeight := lipgloss.Height(bar)
+
 	var content string
-	if m.activeTab < len(m.tabContents) {
-		if m.tabContents[m.activeTab].HasError {
-			content = components.ErrorStyle.Render(m.tabContents[m.activeTab].ErrorMsg)
+	if currentTab != nil {
+		if currentTab.HasError {
+			content = components.ErrorStyle.Render(currentTab.ErrorMsg)
 		} else {
 			if m.verticalTabs {
 				tabWidth := 0
 				for _, tab := range m.tabs {
-					w := lipgloss.Width(tab) + 4
+					w := lipgloss.Width(tab) + 6
 					if w > tabWidth {
 						tabWidth = w
 					}
 				}
 
-				if m.tabContents[m.activeTab].ScrollView.ViewportModel().Width != m.width-tabWidth ||
-					m.tabContents[m.activeTab].ScrollView.ViewportModel().Height != m.height-1-helpHeight {
-					m.tabContents[m.activeTab].ScrollView.SetSize(m.width-tabWidth, m.height-1-helpHeight)
+				if currentTab.ScrollView.ViewportModel().Width != m.width-tabWidth ||
+					currentTab.ScrollView.ViewportModel().Height != m.height-barHeight {
+					currentTab.ScrollView.SetSize(m.width-tabWidth, m.height-barHeight)
 				}
 
-				m.tabContents[m.activeTab].ScrollView.SetBorder(lipgloss.RoundedBorder())
+				currentTab.ScrollView.SetBorder(lipgloss.RoundedBorder())
 			} else {
-				if m.tabContents[m.activeTab].ScrollView.ViewportModel().Width != m.width ||
-					m.tabContents[m.activeTab].ScrollView.ViewportModel().Height != m.height-1-helpHeight {
-					m.tabContents[m.activeTab].ScrollView.SetSize(m.width, m.height-1-helpHeight)
+				if currentTab.ScrollView.ViewportModel().Width != m.width ||
+					currentTab.ScrollView.ViewportModel().Height != m.height-barHeight-1 { // -1 for tab bar
+					currentTab.ScrollView.SetSize(m.width, m.height-barHeight-1)
 				}
 
-				m.tabContents[m.activeTab].ScrollView.SetBorder(lipgloss.RoundedBorder())
+				currentTab.ScrollView.SetBorder(lipgloss.RoundedBorder())
 			}
-			content = m.tabContents[m.activeTab].ScrollView.View()
+			content = currentTab.ScrollView.View()
 		}
-	}
-
-	m.help.Width = m.width
-	helpView := components.HelpStyleWithBorder.Render(m.help.View(m.keys))
-
-	bufferInfo := ""
-	if m.activeTab < len(m.tabContents) && !m.tabContents[m.activeTab].HasError {
-		lineCount := m.tabContents[m.activeTab].ScrollView.LineCount()
-		if lineCount >= components.DefaultMaxLines/2 && !m.help.ShowAll {
-			bufferInfo = components.HelpStyle.Render(fmt.Sprintf(" • %d/%d lines in buffer", lineCount, components.DefaultMaxLines))
-		}
-	}
-
-	if bufferInfo != "" {
-		helpView += bufferInfo
 	}
 
 	if m.verticalTabs {
+		// Calculate available height for tabs
+		tabsHeight := m.height - barHeight
+		if tabsHeight < 0 {
+			tabsHeight = 0
+		}
+
+		// Adjust tabOffset to ensure activeTab is visible
+		if m.activeTab < m.tabOffset {
+			m.tabOffset = m.activeTab
+		} else if m.activeTab >= m.tabOffset+tabsHeight {
+			m.tabOffset = m.activeTab - tabsHeight + 1
+		}
+		// Ensure offset is valid
+		if m.tabOffset < 0 {
+			m.tabOffset = 0
+		}
+
 		var verticalTabBar strings.Builder
-		for i, tab := range m.tabs {
+		// Render only visible tabs
+		endIndex := m.tabOffset + tabsHeight
+		if endIndex > len(m.tabs) {
+			endIndex = len(m.tabs)
+		}
+
+		for i := m.tabOffset; i < endIndex; i++ {
+			tab := m.tabs[i]
+			icon := " "
 			if i == m.activeTab {
-				verticalTabBar.WriteString(components.ActiveTabStyle.Render(tab))
+				verticalTabBar.WriteString(components.ActiveTabStyle.Render(icon + tab))
 			} else {
-				verticalTabBar.WriteString(components.TabStyle.Render(tab))
+				verticalTabBar.WriteString(components.TabStyle.Render(icon + tab))
 			}
 			verticalTabBar.WriteString("\n")
 		}
 
 		tabWidth := 0
 		for _, tab := range m.tabs {
-			w := lipgloss.Width(tab) + 4
+			w := lipgloss.Width(tab) + 6 // Keep it safe
 			if w > tabWidth {
 				tabWidth = w
 			}
@@ -481,25 +518,26 @@ func (m Model) View() string {
 
 		tabsView := lipgloss.NewStyle().
 			Width(tabWidth).
-			Height(m.height - helpHeight - 1).
+			Height(tabsHeight).
 			Render(verticalTabBar.String())
 
-		return lipgloss.JoinHorizontal(lipgloss.Left, tabsView, lipgloss.JoinVertical(lipgloss.Top, content, helpView))
+		return lipgloss.JoinHorizontal(lipgloss.Left, tabsView, lipgloss.JoinVertical(lipgloss.Top, content, bar))
 	} else {
 		var tabBar strings.Builder
 		xPos := 0
 		for i, tab := range m.tabs {
+			icon := " "
 			renderedTab := ""
 			if i == m.activeTab {
-				renderedTab = components.ActiveTabStyle.Render(tab)
+				renderedTab = components.ActiveTabStyle.Render(icon + tab)
 			} else {
-				renderedTab = components.TabStyle.Render(tab)
+				renderedTab = components.TabStyle.Render(icon + tab)
 			}
 
-			tabWidth := lipgloss.Width(tab) + 4
-			paddedTab := renderedTab
+			tabWidth := lipgloss.Width(renderedTab)
+			// paddedTab := renderedTab // No extra padding needed if style handles it
 
-			tabBar.WriteString(paddedTab)
+			tabBar.WriteString(renderedTab)
 			xPos += tabWidth
 		}
 
@@ -511,7 +549,7 @@ func (m Model) View() string {
 		return lipgloss.JoinVertical(lipgloss.Top,
 			tabBar.String(),
 			content,
-			helpView,
+			bar,
 		)
 	}
 }
